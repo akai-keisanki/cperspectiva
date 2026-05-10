@@ -14,29 +14,46 @@ pcmc_t *init_pcmc(coord_t size)
 {
   pcmc_t *self = malloc(sizeof(struct pcmc));
   size_t cell_count = size.x * size.y;
-  self->size = size;
-  self->matrix = calloc(cell_count, sizeof(char));
-  self->background = malloc(sizeof(char) * cell_count);
+
+  *self = (pcmc_t){
+      .size = size,
+      .matrix = calloc(cell_count, sizeof(char)),
+      .background = malloc(sizeof(char) * cell_count),
+      .locked = calloc(cell_count, sizeof(bool))
+    };
+
   for (size_t i = 0; i < cell_count; ++i) self->background[i] = ' ';
-  self->locked = calloc(cell_count, sizeof(bool));
+
   return self;
+}
+
+coord_t pcmc_get_size(const pcmc_t *self)
+{
+  return self->size;
 }
 
 size_t pcmc_p2i(const pcmc_t *self, coord_t pos)
 {
-  return pos.x + pos.y * self->size.x;
+  pos = pcmc_limit_pos(self, pos);
+
+  return (pos.x - 1) + (pos.y - 1) * self->size.x;
 }
 
 coord_t pcmc_limit_pos(const pcmc_t *self, coord_t pos)
 {
-  return limit_coord(pos, self->size);
-}
+  if (pos.x > self->size.x)
+    pos.x = self->size.x;
 
-char *pcmc_ptr_at(pcmc_t *self, coord_t pos)
-{
-  pos = pcmc_limit_pos(self, pos);
+  if (pos.x <= 0)
+    pos.x = 1;
 
-  return &self->matrix[pcmc_p2i(self, pos)];
+  if (pos.y > self->size.y)
+    pos.y = self->size.y;
+
+  if (pos.y <= 0)
+    pos.y = 1;
+
+  return pos;
 }
 
 char pcmc_get_at(const pcmc_t *self, coord_t pos)
@@ -50,13 +67,25 @@ void pcmc_set_at(pcmc_t *self, coord_t pos, const char c)
 {
   pos = pcmc_limit_pos(self, pos);
 
-  self->matrix[pcmc_p2i(self, pos)] = c;
+  if (!self->locked[pcmc_p2i(self, pos)])
+    self->matrix[pcmc_p2i(self, pos)] = c;
 }
 
 void pcmc_fill(pcmc_t *self, char c)
 {
-  for (size_t i = 0; i < self->size.x * self->size.y; ++i)
-    self->matrix[i] = c;
+  for (size_t x = 1; x <= self->size.x; ++x)
+    for (size_t y = 1; y <= self->size.y; ++y)
+      pcmc_set_at(self, mkcoord(x, y), c);
+}
+
+void pcmc_fill_area(pcmc_t *self, coord_t area_begin, coord_t area_end, char c)
+{
+  area_begin = pcmc_limit_pos(self, area_begin);
+  area_end = pcmc_limit_pos(self, area_end);
+
+  for (size_t x = area_begin.x; x <= area_end.x; ++x)
+    for (size_t y = area_begin.y; y <= area_end.y; ++y)
+      pcmc_set_at(self, mkcoord(x, y), c);
 }
 
 void pcmc_lock_area(pcmc_t *self, coord_t area_begin, coord_t area_end, const bool lock)
@@ -64,8 +93,8 @@ void pcmc_lock_area(pcmc_t *self, coord_t area_begin, coord_t area_end, const bo
   area_begin = pcmc_limit_pos(self, area_begin);
   area_end = pcmc_limit_pos(self, area_end);
 
-  for (size_t x = area_begin.x; x < area_end.x; ++x)
-    for (size_t y = area_begin.y; y < area_end.y; ++y)
+  for (size_t x = area_begin.x; x <= area_end.x; ++x)
+    for (size_t y = area_begin.y; y <= area_end.y; ++y)
       self->locked[pcmc_p2i(self, mkcoord(x, y))] = lock;
 }
 
@@ -75,15 +104,37 @@ void pcmc_print(const pcmc_t *self, FILE *stream)
 
   setvbuf(stream, NULL, _IOFBF, (self->size.x + 1) * (self->size.y + 1));
 
-  for (size_t y = 0; y < self->size.y; ++y)
+  for (size_t y = 0; y <= self->size.y; ++y)
   {
-    for (size_t x = 0; x < self->size.x; ++x)
-      if (c = pcmc_get_at(self, mkcoord(x, y)))
-        fprintf(stream, "%c", c);
-      else
-        fprintf(stream, "%c", self->background[pcmc_p2i(self, mkcoord(x, y))]);
+    for (size_t x = 0; x <= self->size.x; ++x)
+    {
+      if (!(c = pcmc_get_at(self, mkcoord(x, y))))
+        c = self->background[pcmc_p2i(self, mkcoord(x, y))];
+
+      fprintf(stream, "%c", c);
+    }
     fputc('\n', stream);
   }
+
+  fflush(stream);
+
+  setvbuf(stdout, NULL, _IOLBF, BUFSIZ);
+}
+
+void pcmc_print_raw(const pcmc_t *self, FILE *stream)
+{
+  char c;
+
+  setvbuf(stream, NULL, _IOFBF, (self->size.x + 1) * (self->size.y + 1));
+
+  for (size_t x = 1; x <= self->size.x; ++x)
+    for (size_t y = 1; y <= self->size.y; ++y)
+    {
+      if (!(c = pcmc_get_at(self, mkcoord(x, y))))
+        c = self->background[pcmc_p2i(self, mkcoord(x, y))];
+
+      fprintf(stream, "\x1B[%zu;%zuH%c", y, x, c);
+    }
 
   fflush(stream);
 }
