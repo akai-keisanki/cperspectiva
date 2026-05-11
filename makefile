@@ -4,7 +4,7 @@ OBJECT_FILES = $(SOURCE_FILES:src/%.c=obj/%.o)
 CC = cc
 
 TARGET = build/libcpers.so
-COMPILE_FLAGS = -Iinclude -fPIC
+COMPILE_FLAGS = -Iinclude -fPIC -lm
 LINKER_FLAGS = -shared
 
 TEST_BUILD_FLAGS = -Lbuild -l$(TARGET:build/lib%.so=%) $(COMPILE_FLAGS)

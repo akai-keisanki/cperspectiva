@@ -12,3 +12,23 @@ coord_t limit_coord(coord_t coord, coord_t maxs)
 
   return coord;
 }
+
+coord_t sum_coords(const coord_t a, const coord_t b)
+{
+  return mkcoord(a.x + b.x, a.y + b.y);
+}
+
+coord_t sub_coords(const coord_t a, const coord_t b)
+{
+  return mkcoord(a.x - b.x, a.y - b.y);
+}
+
+coord_t mul_coord(const coord_t coord, const size_t n)
+{
+  return mkcoord(coord.x * n, coord.y * n);
+}
+
+coord_t div_coord(const coord_t coord, const size_t n)
+{
+  return mkcoord(coord.x / n, coord.y / n);
+}
