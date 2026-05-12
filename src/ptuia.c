@@ -14,21 +14,28 @@ struct ptuia
   pcmc_t *pcmc;
   void *data;
   tui_init_t *tui_init;
+  tui_close_t *tui_close;
   tui_proccess_t *tui_proccess;
   tui_draw_t *tui_draw;
 };
 
-ptuia_t *init_ptuia(size_t data_struct_size, tui_init_t *tui_init, tui_proccess_t *tui_proccess, tui_draw_t *tui_draw)
+ptuia_t *init_ptuia(size_t data_struct_size, tui_init_t *tui_init, tui_close_t *tui_close, tui_proccess_t *tui_proccess, tui_draw_t *tui_draw)
 {
   ptuia_t *self = malloc(sizeof(ptuia_t));
+  if (self == NULL)
+    return NULL;
 
   *self = (ptuia_t){
       .data = malloc(data_struct_size),
       .tui_init = tui_init,
+      .tui_close = tui_close,
       .tui_proccess = tui_proccess,
       .tui_draw = tui_draw,
       .pcmc = init_pcmc(get_terminal_size())
     };
+
+  if (self->data == NULL || self->pcmc == NULL)
+    return NULL;
 
   return self;
 }
@@ -51,22 +58,27 @@ void ptuia_set_stdio_mode_back(const struct termios termios_backup, int fcntl_fl
   fcntl(STDIN_FILENO, F_SETFL, fcntl_flags_backup);
 }
 
-void ptuia_run_with_stdio(ptuia_t *self)
+signed int ptuia_run_with_stdio(ptuia_t *self)
 {
   struct termios termios_backup;
-  int fcntl_flags_backup;
+  signed int fcntl_flags_backup;
+  signed int tui_proccess_code;
   ptuia_input_t input;
 
-  self->tui_init(self->pcmc, self->data);
-
   input.bytes = malloc(sizeof(char) * INPUT_MAXSIZE + sizeof(int));
+  if (input.bytes == NULL)
+    return EXIT_FAILURE;
+
+  if (self->tui_init(self->pcmc, self->data) != EXIT_SUCCESS)
+    return EXIT_FAILURE;
 
   ptuia_set_stdio_to_raw_mode(&termios_backup, &fcntl_flags_backup);
     
-  while (true)
+  while (tui_proccess_code != PTUIA_BREAK)
   {
     self->tui_draw(self->pcmc, self->data);
 
+    write(STDOUT_FILENO, "\x1B[2J\x1B[H\x1B[3J", 11);
     pcmc_print_raw(self->pcmc, stdout);
 
     sleep_ms(30.0);
@@ -75,12 +87,18 @@ void ptuia_run_with_stdio(ptuia_t *self)
     if (input.size >= INPUT_MAXSIZE) input.size = 0;
     input.bytes[input.size] = 0;
 
-    self->tui_proccess(self->pcmc, self->data, input);
+    tui_proccess_code = self->tui_proccess(self->pcmc, self->data, input);
   }
+
+  self->tui_close(self->data);
+
+  free(input.bytes);
+
+  write(STDOUT_FILENO, "\x1B[2J\x1B[H\x1B[3J", 11);
 
   ptuia_set_stdio_mode_back(termios_backup, fcntl_flags_backup);
 
-  free(input.bytes);
+  return EXIT_SUCCESS;
 }
 
 void free_ptuia(ptuia_t *self)

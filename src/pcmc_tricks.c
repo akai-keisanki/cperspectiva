@@ -1,6 +1,7 @@
 #include <cpers/pcmc_tricks.h>
 
 #include <stddef.h>
+#include <math.h>
 
 void pcmct_write_str(pcmc_t *pcmc, const coord_t begin, const char *str, const coord_t dir)
 {
@@ -10,7 +11,85 @@ void pcmct_write_str(pcmc_t *pcmc, const coord_t begin, const char *str, const c
 
   for (size_t i = 0; str[i]; ++i)
   {
+    p = pcmc_limit_pos(pcmc, p);
+
     pcmc_set_at(pcmc, p, str[i]);
     p = sum_coords(p, dir);
+  }
+}
+
+void pcmct_fill_area(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const char c)
+{
+  area_begin = pcmc_limit_pos(pcmc, area_begin);
+  area_end = pcmc_limit_pos(pcmc, area_end);
+  order_rectangle_limit_coords(&area_begin, &area_end);
+
+  for (size_t x = area_begin.x; x <= area_end.x; ++x)
+    for (size_t y = area_begin.y; y <= area_end.y; ++y)
+      pcmc_set_at(pcmc, mkcoord(x, y), c);
+}
+
+void pcmct_frame_area(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const char c)
+{
+  area_begin = pcmc_limit_pos(pcmc, area_begin);
+  area_end = pcmc_limit_pos(pcmc, area_end);
+  order_rectangle_limit_coords(&area_begin, &area_end);
+
+  for (size_t x = area_begin.x; x <= area_end.x; ++x)
+  {
+    pcmc_set_at(pcmc, mkcoord(x, area_begin.y), c);
+    pcmc_set_at(pcmc, mkcoord(x, area_end.y), c);
+  }
+
+  for (size_t y = area_begin.y; y <= area_end.y; ++y)
+  {
+    pcmc_set_at(pcmc, mkcoord(area_begin.x, y), c);
+    pcmc_set_at(pcmc, mkcoord(area_end.x, y), c);
+  }
+}
+
+void pcmct_draw_line(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const char c)
+{
+  // TODO: WIP
+  
+  pcmct_draw_line_with_slope(pcmc, area_begin, area_end, c);
+}
+
+void pcmct_draw_line_with_slope(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const char c)
+{
+  unsigned long int per;
+
+  order_coords(&area_begin, &area_end);
+
+  if (area_end.x == area_begin.x)
+  {
+    for (size_t y = area_begin.y; y < area_end.y; ++y)
+      pcmc_set_at(pcmc, mkcoord(area_begin.x, y), c);
+
+    return;
+  }
+
+  if (area_end.y == area_begin.y)
+  {
+    for (size_t x = area_begin.x; x < area_end.x; ++x)
+      pcmc_set_at(pcmc, mkcoord(x, area_begin.y), c);
+
+    return;
+  }
+
+  double slope = ((double)area_end.y - area_begin.y) / ((double)area_end.x - area_begin.x);
+
+  for (size_t x = area_begin.x; x < area_end.x; ++x)
+  {
+    per = round(((double)x - area_begin.x) * slope + area_begin.y);
+    pcmc_set_at(pcmc, mkcoord(x, per), c);
+  }
+
+  slope = ((double)area_end.x - area_begin.x) / ((double)area_end.y - area_begin.y);
+
+  for (size_t y = area_begin.y; y != area_end.y; area_begin.y < area_end.y ? ++y : --y)
+  {
+    per = round(((double)y - area_begin.y) * slope + area_begin.x);
+    pcmc_set_at(pcmc, mkcoord(per, y), c);
   }
 }

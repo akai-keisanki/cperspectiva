@@ -13,6 +13,9 @@ struct pcmc
 pcmc_t *init_pcmc(coord_t size)
 {
   pcmc_t *self = malloc(sizeof(struct pcmc));
+  if (self == NULL)
+    return NULL;
+
   size_t cell_count = size.x * size.y;
 
   *self = (pcmc_t){
@@ -21,8 +24,11 @@ pcmc_t *init_pcmc(coord_t size)
       .background = malloc(sizeof(char) * cell_count),
       .locked = calloc(cell_count, sizeof(bool))
     };
+  if (self->matrix == NULL || self->background == NULL || self->locked == NULL)
+    return NULL;
 
-  for (size_t i = 0; i < cell_count; ++i) self->background[i] = ' ';
+  for (size_t i = 0; i < cell_count; ++i)
+    self->background[i] = ' ';
 
   return self;
 }
@@ -75,16 +81,6 @@ void pcmc_fill(pcmc_t *self, char c)
 {
   for (size_t x = 1; x <= self->size.x; ++x)
     for (size_t y = 1; y <= self->size.y; ++y)
-      pcmc_set_at(self, mkcoord(x, y), c);
-}
-
-void pcmc_fill_area(pcmc_t *self, coord_t area_begin, coord_t area_end, char c)
-{
-  area_begin = pcmc_limit_pos(self, area_begin);
-  area_end = pcmc_limit_pos(self, area_end);
-
-  for (size_t x = area_begin.x; x <= area_end.x; ++x)
-    for (size_t y = area_begin.y; y <= area_end.y; ++y)
       pcmc_set_at(self, mkcoord(x, y), c);
 }
 

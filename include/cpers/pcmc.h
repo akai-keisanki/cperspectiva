@@ -19,7 +19,6 @@ char pcmc_get_at(const pcmc_t *self, coord_t pos);
 void pcmc_set_at(pcmc_t *self, coord_t pos, char c);
 
 void pcmc_fill(pcmc_t *self, char c);
-void pcmc_fill_area(pcmc_t *self, coord_t area_begin, coord_t area_end, char c);
 
 void pcmc_lock_area(pcmc_t *self, coord_t area_begin, coord_t area_end, bool lock);
 
