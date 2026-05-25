@@ -69,6 +69,16 @@ char pcmc_get_at(const pcmc_t *self, coord_t pos)
   return self->matrix[pcmc_p2i(self, pos)];
 }
 
+char pcmc_get_display_at(const pcmc_t *self, coord_t pos)
+{
+  char c;
+
+  if (!(c = pcmc_get_at(self, pos)))
+    c = self->background[pcmc_p2i(self, pos)];
+
+  return c;
+}
+
 void pcmc_set_at(pcmc_t *self, coord_t pos, const char c)
 {
   pos = pcmc_limit_pos(self, pos);
@@ -96,19 +106,12 @@ void pcmc_lock_area(pcmc_t *self, coord_t area_begin, coord_t area_end, const bo
 
 void pcmc_print(const pcmc_t *self, FILE *stream)
 {
-  char c;
-
   setvbuf(stream, NULL, _IOFBF, (self->size.x + 1) * (self->size.y + 1));
 
   for (size_t y = 0; y <= self->size.y; ++y)
   {
     for (size_t x = 0; x <= self->size.x; ++x)
-    {
-      if (!(c = pcmc_get_at(self, mkcoord(x, y))))
-        c = self->background[pcmc_p2i(self, mkcoord(x, y))];
-
-      fprintf(stream, "%c", c);
-    }
+      fprintf(stream, "%c", pcmc_get_display_at(self, mkcoord(x, y)));
     fputc('\n', stream);
   }
 
@@ -119,25 +122,20 @@ void pcmc_print(const pcmc_t *self, FILE *stream)
 
 void pcmc_print_raw(const pcmc_t *self, FILE *stream)
 {
-  char c;
-
   setvbuf(stream, NULL, _IOFBF, (self->size.x + 1) * (self->size.y + 1));
 
   for (size_t x = 1; x <= self->size.x; ++x)
     for (size_t y = 1; y <= self->size.y; ++y)
-    {
-      if (!(c = pcmc_get_at(self, mkcoord(x, y))))
-        c = self->background[pcmc_p2i(self, mkcoord(x, y))];
-
-      fprintf(stream, "\x1B[%zu;%zuH%c", y, x, c);
-    }
+      fprintf(stream, "\x1B[%zu;%zuH%c", y, x, pcmc_get_display_at(self, mkcoord(x, y)));
 
   fflush(stream);
 }
 
 void pcmc_set_self_as_background(pcmc_t *self)
 {
-  memcpy(self->background, self->matrix, sizeof(char) * self->size.x * self->size.y);
+  for (size_t x = 1; x <= self->size.x; ++x)
+    for (size_t y = 1; y <= self->size.y; ++y)
+      self->background[pcmc_p2i(self, mkcoord(x, y))] = pcmc_get_display_at(self, mkcoord(x, y));
 }
 
 void free_pcmc(pcmc_t *self)

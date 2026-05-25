@@ -16,6 +16,7 @@ coord_t pcmc_get_size(const pcmc_t *self);
 coord_t pcmc_limit_pos(const pcmc_t *self, coord_t pos);
 
 char pcmc_get_at(const pcmc_t *self, coord_t pos);
+char pcmc_get_display_at(const pcmc_t *self, coord_t pos);
 void pcmc_set_at(pcmc_t *self, coord_t pos, char c);
 
 void pcmc_fill(pcmc_t *self, char c);
