@@ -14,7 +14,7 @@ The continued Perspectiva Project (https://github.com/Science52101/Perspectiva) 
 
 - PCMC - Perspectiva Character Matrix Container
   - Character matrix container;
-  - Canonical and raw output drawing/rendering support;
+  - Buffered/formated and raw drawing/rendering support;
   - Background layer support;
 
 - PCMC Ticks
@@ -29,3 +29,16 @@ The continued Perspectiva Project (https://github.com/Science52101/Perspectiva) 
 ## Examples
 
 Check the [`examples/`](examples/) directory on this repository.
+
+## Usage
+
+### Testing
+
+For test purposes, write a script like one of the examples to a `test.c` file into this project's working directory.
+
+Execute `make clean run_test` to build the library, compile your script and link both. The resulting binary will be created as `test`.
+
+### Linking
+
+First, to build the shared library, run `make clean build/libcpers.so`.
+Then, your source must be compiled with the flag for the library includes (e.g. `-Ipath/to/cperspectiva/include`) and linked against the shared library (e.g. `-Lpath/to/cperspectiva/build -lcpers`).
