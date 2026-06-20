@@ -1,5 +1,6 @@
 #include <cpers/ptuia.h>
 #include <stdlib.h>
+#include <locale.h>
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
@@ -40,28 +41,39 @@ ptuia_t *init_ptuia(size_t data_struct_size, tui_init_t *tui_init, tui_close_t *
   return self;
 }
 
-void ptuia_set_stdio_to_raw_mode(struct termios *termios_backup, int *fcntl_flags_backup)
+struct terminal_state_backup
 {
-  tcgetattr(STDOUT_FILENO, termios_backup);
-  *fcntl_flags_backup = fcntl(STDIN_FILENO, F_GETFL, 0);
+  struct termios termios_backup;
+  int fcntl_flags_backup;
+  char locale_backup[256];
+};
 
-  struct termios termios_raw = *termios_backup;
+void ptuia_set_stdio_raw(struct terminal_state_backup *tsb)
+{
+  tcgetattr(STDOUT_FILENO, &tsb->termios_backup);
+  tsb->fcntl_flags_backup = fcntl(STDIN_FILENO, F_GETFL, 0);
+  snprintf(tsb->locale_backup, sizeof(tsb->locale_backup), "%s", setlocale(LC_ALL, NULL));
+
+  struct termios termios_raw = tsb->termios_backup;
   termios_raw.c_lflag &= ~(ECHO | ICANON);
 
   tcsetattr(STDOUT_FILENO, TCSAFLUSH, &termios_raw);
-  fcntl(STDIN_FILENO, F_SETFL, *fcntl_flags_backup | O_NONBLOCK);
+  fcntl(STDIN_FILENO, F_SETFL, tsb->fcntl_flags_backup | O_NONBLOCK);
+
+  setlocale(LC_ALL, "");
 }
 
-void ptuia_set_stdio_mode_back(const struct termios termios_backup, int fcntl_flags_backup)
+void ptuia_set_stdio_back(struct terminal_state_backup tsb)
 {
-  tcsetattr(STDOUT_FILENO, TCSAFLUSH, &termios_backup);
-  fcntl(STDIN_FILENO, F_SETFL, fcntl_flags_backup);
+  tcsetattr(STDOUT_FILENO, TCSAFLUSH, &tsb.termios_backup);
+  fcntl(STDIN_FILENO, F_SETFL, tsb.fcntl_flags_backup);
+
+  setlocale(LC_ALL, tsb.locale_backup);
 }
 
 signed int ptuia_run_with_stdio(ptuia_t *self)
 {
-  struct termios termios_backup;
-  signed int fcntl_flags_backup;
+  struct terminal_state_backup tsb;
   signed int tui_process_code;
   ptuia_input_t input;
 
@@ -72,7 +84,7 @@ signed int ptuia_run_with_stdio(ptuia_t *self)
   if (self->tui_init(self->pcmc, self->data) != EXIT_SUCCESS)
     return EXIT_FAILURE;
 
-  ptuia_set_stdio_to_raw_mode(&termios_backup, &fcntl_flags_backup);
+  ptuia_set_stdio_raw(&tsb);
     
   while (tui_process_code != PTUIA_BREAK)
   {
@@ -96,7 +108,7 @@ signed int ptuia_run_with_stdio(ptuia_t *self)
 
   write(STDOUT_FILENO, "\x1B[2J\x1B[H\x1B[3J", 11);
 
-  ptuia_set_stdio_mode_back(termios_backup, fcntl_flags_backup);
+  ptuia_set_stdio_back(tsb);
 
   return EXIT_SUCCESS;
 }

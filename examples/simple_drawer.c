@@ -14,6 +14,8 @@ struct tui_data
   coord_t p;
   char in_1stb;
   bool cursor_state;
+  bool save;
+  FILE *save_f;
 };
 
 signed int tui_init(pcmc_t *pcmc, void *tui_data)
@@ -24,7 +26,9 @@ signed int tui_init(pcmc_t *pcmc, void *tui_data)
   *data = (struct tui_data){
       .p = div_coord(size, 2),
       .in_1stb = '\0',
-      .cursor_state = 0
+      .cursor_state = 0,
+      .save_f = fopen("paint.txt", "w"),
+      .save = false
     };
 
   return EXIT_SUCCESS;
@@ -32,7 +36,9 @@ signed int tui_init(pcmc_t *pcmc, void *tui_data)
 
 void tui_close(void *tui_data)
 {
-  // nothing to free
+  struct tui_data *data = tui_data;
+
+  fclose(data->save_f);
 }
 
 signed int tui_process(const pcmc_t *pcmc, void *tui_data, ptuia_input_t input)
@@ -41,6 +47,8 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, ptuia_input_t input)
   const coord_t size = pcmc_get_size(pcmc);
   coord_t drct = mkcoord(0, 0);
 
+  data->save = false;
+  
   if (!strcmp(input.bytes, "\x1B[A"))
     drct = mkcoord(0, -1);
   else if (!strcmp(input.bytes, "\x1B[B"))
@@ -49,6 +57,8 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, ptuia_input_t input)
     drct = mkcoord(1, 0);
   else if (!strcmp(input.bytes, "\x1B[D"))
     drct = mkcoord(-1, 0);
+  else if (!strcmp(input.bytes, "\n"))
+    data->save = true;
 
   data->p = sum_coords(data->p, drct);
 
@@ -78,9 +88,8 @@ void tui_draw(pcmc_t *pcmc, const void *tui_data)
 
   pcmc_fill(pcmc, '\0');
 
-  pcmct_fill_area(pcmc, mkcoord(0, size.y - 1), mkcoord(size.x, size.y - 1), '_');
-  pcmct_fill_area(pcmc, mkcoord(0, size.y), mkcoord(size.x, size.y), ' ');
-  pcmct_write_str(pcmc, mkcoord(0, size.y), "Press ESC to exit. Use the arrow keys to move the cursor, type to paint.", mkcoord(1, 0));
+  if (data->save)
+    pcmc_print(pcmc, data->save_f);
 
   pcmc_set_at(pcmc, data->p, '\0');
 
@@ -88,6 +97,10 @@ void tui_draw(pcmc_t *pcmc, const void *tui_data)
     pcmc_set_at(pcmc, data->p, data->in_1stb);
 
   pcmc_set_self_as_background(pcmc);
+
+  pcmct_fill_area(pcmc, mkcoord(0, size.y - 1), mkcoord(size.x, size.y - 1), '_');
+  pcmct_fill_area(pcmc, mkcoord(0, size.y), mkcoord(size.x, size.y), ' ');
+  pcmct_write_str(pcmc, mkcoord(0, size.y), "Press ESC to exit. Use the arrow keys to move the cursor, type to paint. Enter to save to paint.txt", mkcoord(1, 0));
 
   if (data->cursor_state)
     pcmc_set_at(pcmc, data->p, '#');
