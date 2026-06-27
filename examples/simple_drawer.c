@@ -53,6 +53,8 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **compon
   data->save = false;
 
   data->in_1stb = '\0';
+
+  // process input
   
   if (!strcmp(input.bytes, "\x1B[A"))
     drct = mkcoord(0, -1);
@@ -62,16 +64,20 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **compon
     drct = mkcoord(1, 0);
   else if (!strcmp(input.bytes, "\x1B[D"))
     drct = mkcoord(-1, 0);
+
   else if (!strcmp(input.bytes, "\n"))
     data->save = true;
+
+  else if (!strcmp(input.bytes, "\x1B"))
+    return PTUIA_BREAK;
+
   else
     data->in_1stb = input.bytes[0];
 
+  // movement
+
   data->p = sum_coords(data->p, drct);
   limit_coord(data->p, pcmc_get_size(components[0]));
-
-  if (!strcmp(input.bytes, "\x1B"))
-    return PTUIA_BREAK;
 
   const coord_t c0_sz = pcmc_get_size(components[0]);
 
@@ -83,6 +89,8 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **compon
     data->p.x = 1;
   if (data->p.y > c0_sz.y)
     data->p.y = 1;
+
+  // animations
 
   data->cursor_state = !data->cursor_state;
 

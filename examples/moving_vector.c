@@ -46,6 +46,8 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **compon
 {
   struct tui_data *data = tui_data;
 
+  // process input
+
   if (!strcmp(input.bytes, "\x1B[A"))
     data->drct = mkcoord(0, -1);
   else if (!strcmp(input.bytes, "\x1B[B"))
@@ -57,6 +59,8 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **compon
 
   if (!strcmp(input.bytes, "q"))
     return PTUIA_BREAK;
+
+  // movement
 
   data->p = sum_coords(data->p, data->drct);
 
@@ -70,6 +74,8 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **compon
     data->p.x = 1;
   if (data->p.y > c0_sz.y)
     data->p.y = 1;
+
+  // store input for display
 
   strncpy(data->input_bytes, input.bytes, 255);
   data->input_bytes[255] = 0;
