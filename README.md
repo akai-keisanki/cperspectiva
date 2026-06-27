@@ -12,19 +12,22 @@ The continued Perspectiva Project (https://github.com/Science52101/Perspectiva) 
 
 ## Features
 
-- PCMC - Perspectiva Character Matrix Container
+- PCMC -- Perspectiva Character Matrix Container
   - Character matrix container;
   - Buffered/formated and raw drawing/rendering support;
   - Background layer support;
 
 - PCMC Ticks
   - Drawing utils/functionality for PCMC;
+  - Character string writing support with vectorial direction;
+  - PCMC to PCMC drawing suport;
 
-- PTUIA - Perspectiva Terminal User Interface Abstracter
+- PTUIA -- Perspectiva Terminal User Interface Abstracter
   - Stateful TUI application abstracter object with lifecycle callbacks;
   - User-defined application state;
   - Raw keyboard input processing support;
   - ANSI-oriented TUI drawing/rendering;
+  - Components (secondary PCMCs) with automatic size support;
 
 ## Examples
 
