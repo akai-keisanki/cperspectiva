@@ -1,11 +1,11 @@
 #include <cpers/types.h>
 
-coord_t mkcoord(signed long int x, size_t y)
+coord_t mkcoord(const signed long int x, const signed long int y)
 {
   return (coord_t){ .x = x, .y = y };
 }
 
-coord_t limit_coord(coord_t coord, coord_t maxs)
+coord_t limit_coord(coord_t coord, const coord_t maxs)
 {
   if (coord.x > maxs.x) coord.x = maxs.x;
   if (coord.y > maxs.y) coord.y = maxs.y;

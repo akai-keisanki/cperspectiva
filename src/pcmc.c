@@ -12,6 +12,11 @@ struct pcmc
 
 pcmc_t *init_pcmc(coord_t size)
 {
+  if (size.x <= 0)
+    size.x = 0;
+  if (size.y <= 0)
+    size.y = 0;
+
   pcmc_t *self = malloc(sizeof(struct pcmc));
   if (self == NULL)
     return NULL;
@@ -67,13 +72,13 @@ coord_t pcmc_limit_pos(const pcmc_t *self, coord_t pos)
   if (pos.x > self->size.x)
     pos.x = self->size.x;
 
-  if (pos.x <= 0)
+  if (pos.x < 1)
     pos.x = 1;
 
   if (pos.y > self->size.y)
     pos.y = self->size.y;
 
-  if (pos.y <= 0)
+  if (pos.y < 1)
     pos.y = 1;
 
   return pos;
@@ -86,12 +91,19 @@ char pcmc_get_at(const pcmc_t *self, coord_t pos)
   return self->matrix[pcmc_p2i(self, pos)];
 }
 
+char pcmc_get_background_at(const pcmc_t *self, coord_t pos)
+{
+  pos = pcmc_limit_pos(self, pos);
+
+  return self->background[pcmc_p2i(self, pos)];
+}
+
 char pcmc_get_display_at(const pcmc_t *self, coord_t pos)
 {
   char c;
 
-  if (!(c = pcmc_get_at(self, pos)))
-    c = self->background[pcmc_p2i(self, pos)];
+  if ((c = pcmc_get_at(self, pos)) == '\0')
+    c = pcmc_get_background_at(self, pos);
 
   return c;
 }
@@ -104,11 +116,11 @@ void pcmc_set_at(pcmc_t *self, coord_t pos, const char c)
     self->matrix[pcmc_p2i(self, pos)] = c;
 }
 
-void pcmc_fill(pcmc_t *self, char c)
+void pcmc_set_background_at(pcmc_t *self, coord_t pos, const char c)
 {
-  for (size_t x = 1; x <= self->size.x; ++x)
-    for (size_t y = 1; y <= self->size.y; ++y)
-      pcmc_set_at(self, mkcoord(x, y), c);
+  pos = pcmc_limit_pos(self, pos);
+
+  self->background[pcmc_p2i(self, pos)] = c;
 }
 
 void pcmc_lock_area(pcmc_t *self, coord_t area_begin, coord_t area_end, const bool lock)
@@ -146,13 +158,6 @@ void pcmc_print_raw(const pcmc_t *self, FILE *stream)
       fprintf(stream, "\x1B[%zu;%zuH%c", y, x, pcmc_get_display_at(self, mkcoord(x, y)));
 
   fflush(stream);
-}
-
-void pcmc_set_self_as_background(pcmc_t *self)
-{
-  for (size_t x = 1; x <= self->size.x; ++x)
-    for (size_t y = 1; y <= self->size.y; ++y)
-      self->background[pcmc_p2i(self, mkcoord(x, y))] = pcmc_get_display_at(self, mkcoord(x, y));
 }
 
 void pcmc_reset(pcmc_t *self)

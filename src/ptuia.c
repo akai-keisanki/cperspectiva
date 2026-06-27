@@ -45,9 +45,17 @@ ptuia_t *init_ptuia(size_t data_struct_size, tui_init_t *tui_init, tui_close_t *
     return NULL;
   }
 
+  coord_t size = pcmc_get_size(self->pcmc);
+
   for (size_t i = 0; i < components_num; ++i)
   {
-    self->components[i] = init_pcmc(component_sizes[i]);
+    coord_t c_sz = component_sizes[i];
+    if (c_sz.x <= 0)
+      c_sz.x += size.x;
+    if (c_sz.y <= 0)
+      c_sz.y += size.y;
+
+    self->components[i] = init_pcmc(c_sz);
     if (self->components[i] == NULL)
     {
       free_ptuia(self);
@@ -96,7 +104,7 @@ void ptuia_set_stdio_raw(struct terminal_state_backup *tsb)
   tcsetattr(STDOUT_FILENO, TCSAFLUSH, &termios_raw);
   fcntl(STDIN_FILENO, F_SETFL, tsb->fcntl_flags_backup | O_NONBLOCK);
 
-  setlocale(LC_ALL, "");
+  setlocale(LC_ALL, "UTF-8");
 }
 
 void ptuia_set_stdio_back(struct terminal_state_backup tsb)

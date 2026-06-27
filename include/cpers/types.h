@@ -7,7 +7,7 @@
 struct coord;
 typedef struct coord coord_t;
 
-coord_t mkcoord(signed long int x, size_t y);
+coord_t mkcoord(signed long int x, signed long int y);
 coord_t limit_coord(coord_t coord, coord_t maxs);
 
 coord_t sum_coords(coord_t a, coord_t b);
