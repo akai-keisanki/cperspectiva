@@ -134,8 +134,8 @@ void pcmct_pcmc2pcmc_base(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, co
   if (area_end.y - area_begin.y > src_sz.y)
     area_end.y = area_begin.y + src_sz.y;
 
-  for (size_t x = area_begin.x, x2 = 1; x < area_end.x; (++x, ++x2))
-    for (size_t y = area_begin.y, y2 = 1; y < area_end.y; (++y, ++y2))
+  for (size_t x = area_begin.x, x2 = 1; x <= area_end.x; (++x, ++x2))
+    for (size_t y = area_begin.y, y2 = 1; y <= area_end.y; (++y, ++y2))
       pcmc_set_at(pcmc, mkcoord(x, y), pcmc_get_at_f(src, mkcoord(x2, y2)));
 }
 
