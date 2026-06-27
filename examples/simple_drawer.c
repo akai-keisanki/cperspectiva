@@ -22,10 +22,11 @@ struct tui_data
 signed int tui_init(pcmc_t *pcmc, void *tui_data, pcmc_t **components)
 {
   struct tui_data *data = tui_data;
-  const coord_t size = pcmc_get_size(pcmc);
+
+  const coord_t c0_sz = pcmc_get_size(components[0]);
 
   *data = (struct tui_data){
-      .p = div_coord(size, 2),
+      .p = div_coord(c0_sz, 2),
       .in_1stb = '\0',
       .cursor_state = 0,
       .save_f = fopen("paint.txt", "w"),
@@ -72,15 +73,15 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **compon
   if (!strcmp(input.bytes, "\x1B"))
     return PTUIA_BREAK;
 
-  const coord_t size = pcmc_get_size(pcmc);
+  const coord_t c0_sz = pcmc_get_size(components[0]);
 
-  if (data->p.x <= 0)
-    data->p.x = size.x;
-  if (data->p.y <= 0)
-    data->p.y = size.y;
-  if (data->p.x > size.x - 2)
+  if (data->p.x < 1)
+    data->p.x = c0_sz.x;
+  if (data->p.y < 1)
+    data->p.y = c0_sz.y;
+  if (data->p.x > c0_sz.x)
     data->p.x = 1;
-  if (data->p.y > size.y - 2)
+  if (data->p.y > c0_sz.y)
     data->p.y = 1;
 
   data->cursor_state = !data->cursor_state;
@@ -91,8 +92,6 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **compon
 void tui_draw(pcmc_t *pcmc, const void *tui_data, pcmc_t **components)
 {
   const struct tui_data *data = tui_data;
-
-  pcmct_fill(pcmc, '!');
 
   // component [0] (canvas)
 
@@ -109,17 +108,17 @@ void tui_draw(pcmc_t *pcmc, const void *tui_data, pcmc_t **components)
 
   // component [1] (footer)
 
-  const coord_t size = pcmc_get_size(pcmc);
-  
   const coord_t c1_sz = pcmc_get_size(components[1]);
 
   pcmct_fill(components[1], ' ');
-  pcmct_fill_area(components[1], mkcoord(1, 1), mkcoord(size.x, 1), '_');
+  pcmct_fill_area(components[1], mkcoord(1, 1), mkcoord(c1_sz.x, 1), '_');
   pcmct_write_str(components[1], mkcoord(1, 2), "Press ESC to exit. Use the arrow keys to move the cursor, type to paint. Enter to save to paint.txt", mkcoord(1, 0));
 
   // draw components
+  
+  const coord_t size = pcmc_get_size(pcmc);
 
-  pcmct_pcmc2pcmc_display(pcmc, mkcoord(1, 1), size, components[0]);
+  pcmct_pcmc2pcmc_display(pcmc, mkcoord(1, 1), mkcoord(size.x, size.y - 2), components[0]);
   pcmct_pcmc2pcmc_foreground(pcmc, mkcoord(1, size.y - 1), size, components[1]);
 }
 
@@ -127,7 +126,7 @@ signed int main(void)
 {
   signed int exit_code = EXIT_SUCCESS;
 
-  ptuia_t *ptuia = init_ptuia(sizeof(struct tui_data), tui_init, tui_close, tui_process, tui_draw, 2, (coord_t[2]){mkcoord(0, 0), mkcoord(0, 2)});
+  ptuia_t *ptuia = init_ptuia(sizeof(struct tui_data), tui_init, tui_close, tui_process, tui_draw, 2, (coord_t[2]){mkcoord(0, -2), mkcoord(0, 2)});
 
   if (ptuia == NULL)
   {

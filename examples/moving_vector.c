@@ -16,13 +16,13 @@ struct tui_data
   char *input_bytes;
 };
 
-signed int tui_init(pcmc_t *pcmc, void *tui_data)
+signed int tui_init(pcmc_t *pcmc, void *tui_data, pcmc_t **components)
 {
   struct tui_data *data = tui_data;
-  const coord_t size = pcmc_get_size(pcmc);
+  const coord_t c0_sz = pcmc_get_size(components[0]);
 
   *data = (struct tui_data){
-      .p = div_coord(size, 2),
+      .p = div_coord(c0_sz, 2),
       .drct = mkcoord(0, 0),
       .input_bytes = malloc(sizeof(char) * 256)
     };
@@ -42,11 +42,9 @@ void tui_close(void *tui_data)
   free(data->input_bytes);
 }
 
-signed int tui_process(const pcmc_t *pcmc, void *tui_data, ptuia_input_t input)
+signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **components, ptuia_input_t input)
 {
   struct tui_data *data = tui_data;
-  const coord_t size = pcmc_get_size(pcmc);
-  size_t i;
 
   if (!strcmp(input.bytes, "\x1B[A"))
     data->drct = mkcoord(0, -1);
@@ -62,13 +60,15 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, ptuia_input_t input)
 
   data->p = sum_coords(data->p, data->drct);
 
-  if (data->p.x <= 0)
-    data->p.x = size.x;
-  if (data->p.y <= 0)
-    data->p.y = size.y;
-  if (data->p.x > size.x)
+  const coord_t c0_sz = pcmc_get_size(components[0]);
+
+  if (data->p.x < 1)
+    data->p.x = c0_sz.x;
+  if (data->p.y < 1)
+    data->p.y = c0_sz.y;
+  if (data->p.x > c0_sz.x)
     data->p.x = 1;
-  if (data->p.y > size.y)
+  if (data->p.y > c0_sz.y)
     data->p.y = 1;
 
   strncpy(data->input_bytes, input.bytes, 255);
@@ -77,27 +77,40 @@ signed int tui_process(const pcmc_t *pcmc, void *tui_data, ptuia_input_t input)
   return PTUIA_CONTINUE;
 }
 
-void tui_draw(pcmc_t *pcmc, const void *tui_data)
+void tui_draw(pcmc_t *pcmc, const void *tui_data, pcmc_t **components)
 {
   const struct tui_data *data = tui_data;
+
+  // component [0] (canvas)
+
+  const coord_t c0_sz = pcmc_get_size(components[0]);
+
+  pcmct_fill(components[0], ' ');
+
+  pcmct_draw_line(components[0], div_coord(c0_sz, 2), data->p, '#');
+
+  // component [1] (footer)
+
+  const coord_t c1_sz = pcmc_get_size(components[1]);
+
+  pcmct_fill(components[1], ' ');
+  pcmct_fill_area(components[1], mkcoord(1, 1), mkcoord(c1_sz.x, 1), '_');
+
+  pcmct_write_str(components[1], mkcoord(1, 2), "Press q to exit. Use the arrow keys to move the vector.", mkcoord(1, 0));
+  pcmct_write_str(components[1], mkcoord(1, 3), data->input_bytes, mkcoord(1, 0));
+
+  // draw components
+  
   const coord_t size = pcmc_get_size(pcmc);
 
-  pcmc_fill(pcmc, ' ');
-
-  pcmct_draw_line(pcmc, div_coord(size, 2), data->p, '#');
-
-  pcmct_fill_area(pcmc, mkcoord(0, size.y - 2), mkcoord(size.x, size.y - 2), '_');
-  pcmct_fill_area(pcmc, mkcoord(0, size.y - 1), mkcoord(size.x, size.y), ' ');
-  pcmct_write_str(pcmc, mkcoord(0, size.y - 1), "Press q to exit. Use the arrow keys to move the vector.", mkcoord(1, 0));
-  if (data->input_bytes)
-    for (size_t i = 0; data->input_bytes[i]; ++i)
-      pcmc_set_at(pcmc, mkcoord(i + 1, size.y), data->input_bytes[i]);
+  pcmct_pcmc2pcmc_display(pcmc, mkcoord(1, 1), mkcoord(size.x, size.y - 3), components[0]);
+  pcmct_pcmc2pcmc_foreground(pcmc, mkcoord(1, size.y - 2), size, components[1]);
 }
 
 signed int main(void)
 {
   signed int exit_code = EXIT_SUCCESS;
-  ptuia_t *ptuia = init_ptuia(sizeof(struct tui_data), tui_init, tui_close, tui_process, tui_draw);
+  ptuia_t *ptuia = init_ptuia(sizeof(struct tui_data), tui_init, tui_close, tui_process, tui_draw, 2, (coord_t[2]){mkcoord(0, -3), mkcoord(0, 3)});
 
   if (ptuia == NULL)
   {
@@ -117,3 +130,4 @@ signed int main(void)
 
   return exit_code;
 }
+
