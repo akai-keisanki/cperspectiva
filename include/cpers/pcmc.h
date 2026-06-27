@@ -10,6 +10,7 @@ struct pcmc;
 typedef struct pcmc pcmc_t;
 
 pcmc_t *init_pcmc(coord_t size);
+void free_pcmc(pcmc_t *self);
 
 coord_t pcmc_get_size(const pcmc_t *self);
 
@@ -28,6 +29,6 @@ void pcmc_print_raw(const pcmc_t *self, FILE *stream);
 
 void pcmc_set_self_as_background(pcmc_t *self);
 
-void free_pcmc(pcmc_t *self);
+void pcmc_reset(pcmc_t *self);
 
 #endif

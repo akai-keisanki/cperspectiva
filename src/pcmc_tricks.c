@@ -93,3 +93,16 @@ void pcmct_draw_line_with_slope(pcmc_t *pcmc, coord_t area_begin, coord_t area_e
     pcmc_set_at(pcmc, mkcoord(per, y), c);
   }
 }
+
+void pcmct_pcmc2pcmc(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const pcmc_t *src)
+{
+  area_begin = pcmc_limit_pos(pcmc, area_begin);
+  area_end = pcmc_limit_pos(pcmc, area_end);
+  order_rectangle_limit_coords(&area_begin, &area_end);
+
+  const coord_t src_sz = pcmc_get_size(src);
+
+  for (size_t x = area_begin.x, x2 = 0; x < area_end.x && x2 < src_sz.x; ++x && ++x2)
+    for (size_t y = area_begin.y, y2 = 0; x < area_end.y && y2 < src_sz.y; ++y && ++y2)
+      pcmc_set_at(pcmc, mkcoord(x, y), pcmc_get_at(src, mkcoord(x2, y2)));
+}

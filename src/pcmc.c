@@ -25,12 +25,29 @@ pcmc_t *init_pcmc(coord_t size)
       .locked = calloc(cell_count, sizeof(bool))
     };
   if (self->matrix == NULL || self->background == NULL || self->locked == NULL)
+  {
+    free_pcmc(self);
     return NULL;
+  }
 
   for (size_t i = 0; i < cell_count; ++i)
     self->background[i] = ' ';
 
   return self;
+}
+
+void free_pcmc(pcmc_t *self)
+{
+  if (self == NULL)
+    return;
+
+  if (self->matrix != NULL)
+    free(self->matrix);
+  if (self->background != NULL)
+    free(self->background);
+  if (self->locked != NULL)
+    free(self->locked);
+  free(self);
 }
 
 coord_t pcmc_get_size(const pcmc_t *self)
@@ -138,10 +155,14 @@ void pcmc_set_self_as_background(pcmc_t *self)
       self->background[pcmc_p2i(self, mkcoord(x, y))] = pcmc_get_display_at(self, mkcoord(x, y));
 }
 
-void free_pcmc(pcmc_t *self)
+void pcmc_reset(pcmc_t *self)
 {
-  free(self->matrix);
-  free(self->background);
-  free(self->locked);
-  free(self);
+  size_t cell_count = self->size.x * self->size.y;
+
+  for (size_t i = 0; i < cell_count; ++i)
+  {
+    self->matrix[i] = '\0';
+    self->background[i] = ' ';
+    self->locked[i] = false;
+  }
 }

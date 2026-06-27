@@ -18,9 +18,11 @@ struct ptuia
   tui_close_t *tui_close;
   tui_process_t *tui_process;
   tui_draw_t *tui_draw;
+  size_t components_num;
+  pcmc_t **components;
 };
 
-ptuia_t *init_ptuia(size_t data_struct_size, tui_init_t *tui_init, tui_close_t *tui_close, tui_process_t *tui_process, tui_draw_t *tui_draw)
+ptuia_t *init_ptuia(size_t data_struct_size, tui_init_t *tui_init, tui_close_t *tui_close, tui_process_t *tui_process, tui_draw_t *tui_draw, size_t components_num, coord_t *component_sizes)
 {
   ptuia_t *self = malloc(sizeof(ptuia_t));
   if (self == NULL)
@@ -32,20 +34,54 @@ ptuia_t *init_ptuia(size_t data_struct_size, tui_init_t *tui_init, tui_close_t *
       .tui_close = tui_close,
       .tui_process = tui_process,
       .tui_draw = tui_draw,
-      .pcmc = init_pcmc(get_terminal_size())
+      .pcmc = init_pcmc(get_terminal_size()),
+      .components_num = components_num,
+      .components = malloc(sizeof(pcmc_t *) * components_num)
     };
 
-  if (self->data == NULL || self->pcmc == NULL)
+  if (self->data == NULL || self->pcmc == NULL || self->components == NULL)
+  {
+    free_ptuia(self);
     return NULL;
+  }
+
+  for (size_t i = 0; i < components_num; ++i)
+  {
+    self->components[i] = init_pcmc(component_sizes[i]);
+    if (self->components[i] == NULL)
+    {
+      free_ptuia(self);
+      return NULL;
+    }
+  }
 
   return self;
+}
+
+void free_ptuia(ptuia_t *self)
+{
+  if (self == NULL)
+    return;
+
+  if (self->data != NULL)
+    free(self->data);
+  if (self->pcmc != NULL)
+    free_pcmc(self->pcmc);
+  if (self->components != NULL)
+  {
+    for (size_t i = 0; i < self->components_num; ++i)
+      if (self->components[i])
+        free_pcmc(self->components[i]);
+    free(self->components);
+  }
+  free(self);
 }
 
 struct terminal_state_backup
 {
   struct termios termios_backup;
   int fcntl_flags_backup;
-  char locale_backup[256];
+  char locale_backup[0xFF];
 };
 
 void ptuia_set_stdio_raw(struct terminal_state_backup *tsb)
@@ -81,25 +117,25 @@ signed int ptuia_run_with_stdio(ptuia_t *self)
   if (input.bytes == NULL)
     return EXIT_FAILURE;
 
-  if (self->tui_init(self->pcmc, self->data) != EXIT_SUCCESS)
+  if (self->tui_init(self->pcmc, self->data, self->components) != EXIT_SUCCESS)
     return EXIT_FAILURE;
 
   ptuia_set_stdio_raw(&tsb);
     
   while (tui_process_code != PTUIA_BREAK)
   {
-    self->tui_draw(self->pcmc, self->data);
+    self->tui_draw(self->pcmc, self->data, self->components);
 
     write(STDOUT_FILENO, "\x1B[2J\x1B[H\x1B[3J", 11);
     pcmc_print_raw(self->pcmc, stdout);
 
-    sleep_ms(30.0);
+    sleep_ms(20.0);
 
     input.size = read(STDIN_FILENO, input.bytes, INPUT_MAXSIZE);
     if (input.size >= INPUT_MAXSIZE) input.size = 0;
     input.bytes[input.size] = 0;
 
-    tui_process_code = self->tui_process(self->pcmc, self->data, input);
+    tui_process_code = self->tui_process(self->pcmc, self->data, (const pcmc_t **)self->components, input);
   }
 
   self->tui_close(self->data);
@@ -110,12 +146,9 @@ signed int ptuia_run_with_stdio(ptuia_t *self)
 
   ptuia_set_stdio_back(tsb);
 
-  return EXIT_SUCCESS;
-}
+  pcmc_reset(self->pcmc);
+  for (size_t i = 0; i < self->components_num; ++i)
+    pcmc_reset(self->components[i]);
 
-void free_ptuia(ptuia_t *self)
-{
-  free(self->data);
-  free_pcmc(self->pcmc);
-  free(self);
+  return EXIT_SUCCESS;
 }
