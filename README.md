@@ -17,12 +17,16 @@ The continued Perspectiva Project (https://github.com/Science52101/Perspectiva) 
   - Buffered/formated and raw drawing/rendering support;
   - Background layer support;
 
-- PCMC Ticks
+- PCMC Tricks
   - Drawing utils/functionality for PCMC;
   - Character string writing support with vectorial direction;
   - PCMC to PCMC drawing suport;
 
-- PTUIA -- Perspectiva Terminal User Interface Abstracter
+- TUI Utils
+  - TUI-related IO utils (specially for PTUIA);
+  - Execute callback with std. IO in TUI mode;
+
+- PTUIA -- Perspectiva TUI Abstracter
   - Stateful TUI application abstracter object with lifecycle callbacks;
   - User-defined application state;
   - Raw keyboard input processing support;
