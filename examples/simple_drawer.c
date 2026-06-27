@@ -4,11 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <cpers/types.h>
-#include <cpers/vals.h>
-#include <cpers/pcmc.h>
-#include <cpers/ptuia.h>
-#include <cpers/pcmc_tricks.h>
+#include <cpers/full.h>
 
 struct tui_data
 {
@@ -45,7 +41,7 @@ void tui_close(void *tui_data)
   fclose(data->save_f);
 }
 
-signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **components, ptuia_input_t input)
+signed int tui_process(const pcmc_t *pcmc, void *tui_data, const pcmc_t **components, tuiu_input_t input)
 {
   struct tui_data *data = tui_data;
   coord_t drct = mkcoord(0, 0);

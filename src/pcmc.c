@@ -137,9 +137,9 @@ void pcmc_print(const pcmc_t *self, FILE *stream)
 {
   setvbuf(stream, NULL, _IOFBF, (self->size.x + 1) * (self->size.y + 1));
 
-  for (size_t y = 0; y <= self->size.y; ++y)
+  for (size_t y = 1; y <= self->size.y; ++y)
   {
-    for (size_t x = 0; x <= self->size.x; ++x)
+    for (size_t x = 1; x <= self->size.x; ++x)
       fprintf(stream, "%c", pcmc_get_display_at(self, mkcoord(x, y)));
     fputc('\n', stream);
   }

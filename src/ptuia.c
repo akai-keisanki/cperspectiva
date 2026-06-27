@@ -1,14 +1,10 @@
 #include <cpers/ptuia.h>
+#include <stddef.h>
 #include <stdlib.h>
-#include <locale.h>
 #include <unistd.h>
-#include <termios.h>
-#include <fcntl.h>
-#include <cpers/pcmc.h>
-#include <cpers/time.h>
 #include <cpers/vals.h>
-
-#define INPUT_MAXSIZE (size_t)1024
+#include <cpers/time.h>
+#include <cpers/pcmc.h>
 
 struct ptuia
 {
@@ -85,78 +81,40 @@ void free_ptuia(ptuia_t *self)
   free(self);
 }
 
-struct terminal_state_backup
+signed int ptuia_run_with_stdio_loop(void *ctx)
 {
-  struct termios termios_backup;
-  int fcntl_flags_backup;
-  char locale_backup[0xFF];
-};
+  ptuia_t *self = ctx;
 
-void ptuia_set_stdio_raw(struct terminal_state_backup *tsb)
-{
-  tcgetattr(STDOUT_FILENO, &tsb->termios_backup);
-  tsb->fcntl_flags_backup = fcntl(STDIN_FILENO, F_GETFL, 0);
-  snprintf(tsb->locale_backup, sizeof(tsb->locale_backup), "%s", setlocale(LC_ALL, NULL));
-
-  struct termios termios_raw = tsb->termios_backup;
-  termios_raw.c_lflag &= ~(ECHO | ICANON);
-
-  tcsetattr(STDOUT_FILENO, TCSAFLUSH, &termios_raw);
-  fcntl(STDIN_FILENO, F_SETFL, tsb->fcntl_flags_backup | O_NONBLOCK);
-
-  setlocale(LC_ALL, "UTF-8");
-}
-
-void ptuia_set_stdio_back(struct terminal_state_backup tsb)
-{
-  tcsetattr(STDOUT_FILENO, TCSAFLUSH, &tsb.termios_backup);
-  fcntl(STDIN_FILENO, F_SETFL, tsb.fcntl_flags_backup);
-
-  setlocale(LC_ALL, tsb.locale_backup);
-}
-
-signed int ptuia_run_with_stdio(ptuia_t *self)
-{
-  struct terminal_state_backup tsb;
   signed int tui_process_code;
-  ptuia_input_t input;
-
-  input.bytes = malloc(sizeof(char) * INPUT_MAXSIZE + sizeof(int));
-  if (input.bytes == NULL)
-    return EXIT_FAILURE;
+  tuiu_input_t input;
 
   if (self->tui_init(self->pcmc, self->data, self->components) != EXIT_SUCCESS)
     return EXIT_FAILURE;
 
-  ptuia_set_stdio_raw(&tsb);
-    
   while (tui_process_code != PTUIA_BREAK)
   {
     self->tui_draw(self->pcmc, self->data, self->components);
 
-    write(STDOUT_FILENO, "\x1B[2J\x1B[H\x1B[3J", 11);
+    tuiu_clear_stdout();
     pcmc_print_raw(self->pcmc, stdout);
 
-    sleep_ms(20.0);
+    sleep_ms(30.0);
 
-    input.size = read(STDIN_FILENO, input.bytes, INPUT_MAXSIZE);
-    if (input.size >= INPUT_MAXSIZE) input.size = 0;
-    input.bytes[input.size] = 0;
+    input = tuiu_read_stdin();
 
     tui_process_code = self->tui_process(self->pcmc, self->data, (const pcmc_t **)self->components, input);
   }
 
   self->tui_close(self->data);
 
-  free(input.bytes);
-
-  write(STDOUT_FILENO, "\x1B[2J\x1B[H\x1B[3J", 11);
-
-  ptuia_set_stdio_back(tsb);
-
   pcmc_reset(self->pcmc);
   for (size_t i = 0; i < self->components_num; ++i)
     pcmc_reset(self->components[i]);
 
   return EXIT_SUCCESS;
+}
+
+signed int ptuia_run_with_stdio(ptuia_t *self)
+{
+  tuiu_call_with_tui_mode_in_stdio(ptuia_run_with_stdio_loop, self);
 }
