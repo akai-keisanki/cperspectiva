@@ -13,8 +13,13 @@ void pcmct_set_self_as_background(pcmc_t *pcmc);
 void pcmct_fill_area(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, char c);
 void pcmct_frame_area(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, char c);
 
-void pcmct_draw_line(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, char c);
+
+void pcmct_draw_polygon_fill(pcmc_t *pcmc, unsigned int vertex_count, const coord_t *vertices, char c);
+void pcmct_draw_polygon_border(pcmc_t *pcmc, unsigned int vertex_count, const coord_t *vertices, char c);
+void pcmct_draw_polygon(pcmc_t *pcmc, unsigned int vertex_count, const coord_t *vertices, char c);
+
 void pcmct_draw_line_with_slope(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, char c);
+void pcmct_draw_line(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, char c);
 
 void pcmct_pcmc2pcmc_display(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const pcmc_t *src);
 void pcmct_pcmc2pcmc_foreground(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const pcmc_t *src);
