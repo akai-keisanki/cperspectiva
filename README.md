@@ -33,6 +33,10 @@ The continued Perspectiva Project (https://github.com/Science52101/Perspectiva) 
   - ANSI-oriented TUI drawing/rendering;
   - Components (secondary PCMCs) with automatic size support;
 
+- Perspectiva Types
+  - Integer coordinates type for point and basic vector description;
+  - Basic linear algebra utils for coordinates;
+
 ## Examples
 
 Check the [`examples/`](examples/) directory on this repository.
