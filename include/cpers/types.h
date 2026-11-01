@@ -8,6 +8,8 @@ void pers_swap_li(signed long int *a, signed long int *b);
 signed long int pers_min_li(signed long int a, signed long int b);
 signed long int pers_max_li(signed long int a, signed long int b);
 double pers_no_zero_lf(double x);
+signed long int pers_square_li(signed long int x);
+double pers_square_lf(double x);
 
 struct coord;
 typedef struct coord coord_t;
@@ -18,7 +20,9 @@ coord_t limit_coord(coord_t coord, coord_t maxs);
 coord_t sum_coords(coord_t a, coord_t b);
 coord_t sub_coords(coord_t a, coord_t b);
 coord_t mul_coord(coord_t coord, signed long int n);
+coord_t mul_coord_f64(coord_t coord, double n);
 coord_t div_coord(coord_t coord, signed long int n);
+coord_t div_coord_f64(coord_t coord, double n);
 
 void swap_coords(coord_t *a, coord_t *b);
 void order_coords(coord_t *a, coord_t *b);

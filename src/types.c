@@ -24,6 +24,16 @@ double pers_no_zero_lf(const double x)
   return x < 0.05 ? 0.05 : x;
 }
 
+signed long int pers_square_li(const signed long int x)
+{
+  return x * x;
+}
+
+double pers_square_lf(const double x)
+{
+  return x * x;
+}
+
 coord_t mkcoord(const signed long int x, const signed long int y)
 {
   return (coord_t){ .x = x, .y = y };
@@ -52,7 +62,18 @@ coord_t mul_coord(const coord_t coord, const signed long int n)
   return mkcoord(coord.x * n, coord.y * n);
 }
 
+coord_t mul_coord_f64(const coord_t coord, const double n)
+{
+  return mkcoord(coord.x * n, coord.y * n);
+}
+
+
 coord_t div_coord(const coord_t coord, const signed long int n)
+{
+  return mkcoord(coord.x / n, coord.y / n);
+}
+
+coord_t div_coord_f64(const coord_t coord, const double n)
 {
   return mkcoord(coord.x / n, coord.y / n);
 }
@@ -91,7 +112,7 @@ void order_rectangle_limit_coords(coord_t *a, coord_t *b)
 
 signed long int coord_modulo_square(const coord_t coord)
 {
-  return coord.x * coord.x + coord.y * coord.y;
+  return pers_square_li(coord.x) + pers_square_li(coord.y);
 }
 
 double coord_modulo(const coord_t coord)

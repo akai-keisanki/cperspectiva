@@ -76,7 +76,7 @@ void pcmct_frame_area(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const 
   }
 }
 
-void pcmct_draw_polygon_fill(pcmc_t *pcmc, const unsigned int vertex_count, const coord_t *vertices, const char c)
+void pcmct_draw_polygon_fill(pcmc_t *pcmc, const unsigned int vertex_count, const coord_t *const vertices, const char c)
 {
   signed long int cp;
   unsigned long int ni;
@@ -122,14 +122,17 @@ void pcmct_draw_polygon_fill(pcmc_t *pcmc, const unsigned int vertex_count, cons
     }
 }
 
-void pcmct_draw_polygon_border(pcmc_t *pcmc, const unsigned int vertex_count, const coord_t *vertices, const char c)
+void pcmct_draw_polygon_border(pcmc_t *pcmc, const unsigned int vertex_count, const coord_t *const vertices, const double thickness, const char c)
 {
-  signed long int cp;
   unsigned long int ni;
-  bool cp_sign, in_border;
-  coord_t side_vec, p_vec;
+  bool in_border;
   coord_t minc = vertices[0];
   coord_t maxc = vertices[0];
+  coord_t side_vec;
+  coord_t p_vec;
+  double proj_vec_x, proj_vec_y;
+  double proj_size;
+  double proj_dist_2;
 
   for (unsigned int i = 0; i < vertex_count; ++i)
   {
@@ -143,28 +146,33 @@ void pcmct_draw_polygon_border(pcmc_t *pcmc, const unsigned int vertex_count, co
     for (signed long int y = minc.y; y <= maxc.y; ++y)
     {
       in_border = false;
-      for (unsigned long int i = 0; i < vertex_count; ++i)
+      for (unsigned int i = 0; i < vertex_count; ++i)
       {
         ni = i == vertex_count - 1 ? 0 : i + 1;
 
         side_vec = mkcoord(vertices[ni].x - vertices[i].x, vertices[ni].y - vertices[i].y);
         p_vec = mkcoord(x - vertices[i].x, y - vertices[i].y);
 
-        cp = coords_cross_product_2d(side_vec, p_vec);
+        if (coord_modulo_square(side_vec) == 0)
+        {
+          proj_dist_2 = coord_modulo_square(p_vec);
+        }
+        else
+        {
+          proj_size = (double)coords_dot_product(p_vec, side_vec) / (double)coord_modulo_square(side_vec);
+          if (proj_size < 0.0)
+            proj_size = 0.0;
+          if (proj_size > 1.0)
+            proj_size = 1.0;
 
-        if (cp * cp <= coord_modulo_square(side_vec))
+          proj_vec_x = side_vec.x * proj_size;
+          proj_vec_y = side_vec.y * proj_size;
+          proj_dist_2 = pers_square_lf(proj_vec_x - p_vec.x) + pers_square_lf(proj_vec_y - p_vec.y);
+        }
+        
+        if (proj_dist_2 <= pers_square_lf(thickness - 0.5))
         {
           in_border = true;
-          continue;
-        }
-        if (i == 0)
-        {
-          cp_sign = cp < 0;
-          continue;
-        }
-        if (cp_sign != (cp < 0))
-        {
-          in_border = false;
           break;
         }
       }
@@ -176,7 +184,7 @@ void pcmct_draw_polygon_border(pcmc_t *pcmc, const unsigned int vertex_count, co
 void pcmct_draw_polygon(pcmc_t *pcmc, const unsigned int vertex_count, const coord_t *vertices, const char c)
 {
   pcmct_draw_polygon_fill(pcmc, vertex_count, vertices, c);
-  pcmct_draw_polygon_border(pcmc, vertex_count, vertices, c);
+  pcmct_draw_polygon_border(pcmc, vertex_count, vertices, 1.0, c);
 }
 
 void pcmct_draw_line_with_slope(pcmc_t *pcmc, coord_t begin, coord_t end, const char c)
@@ -218,9 +226,9 @@ void pcmct_draw_line_with_slope(pcmc_t *pcmc, coord_t begin, coord_t end, const 
   }
 }
 
-void pcmct_draw_line(pcmc_t *pcmc, coord_t begin, coord_t end, const char c)
+void pcmct_draw_line(pcmc_t *pcmc, coord_t begin, coord_t end, const double thickness, const char c)
 {
-  pcmct_draw_polygon_border(pcmc, 2, (const coord_t[2]){begin, end}, c);
+  pcmct_draw_polygon_border(pcmc, 2, (const coord_t[2]){begin, end}, thickness, c);
 }
 
 void pcmct_pcmc2pcmc_base(pcmc_t *pcmc, coord_t area_begin, coord_t area_end, const pcmc_t *src, char (*pcmc_get_at_f)(const pcmc_t *, coord_t))
